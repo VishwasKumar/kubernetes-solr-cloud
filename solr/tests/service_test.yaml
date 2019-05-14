@@ -1,0 +1,49 @@
+suite: test solr service
+templates:
+  - service.yaml
+tests:
+  - it: should be of type Service, version v1 and name should end with service
+    release:
+      name: solr
+    asserts:
+      - isKind:
+          of: Service
+      - isAPIVersion:
+          of: v1
+      - matchRegex:
+          path: metadata.name
+          pattern: -service$
+  - it: should contain labels
+    release:
+      name: solr
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/instance: solr
+            app.kubernetes.io/managed-by: Tiller
+            app.kubernetes.io/name: solr
+            helm.sh/chart: solr-0.1.0
+  - it: service type should be clusterIP
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0]
+          value:
+            name: solr-client
+            port: 80
+            protocol: TCP
+            targetPort: 8983
+  - it: service selectors should match required name, instance and component
+    release:
+      name: solr
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/component: solr-server
+            app.kubernetes.io/instance: solr
+            app.kubernetes.io/name: solr
+
