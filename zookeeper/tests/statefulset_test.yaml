@@ -1,0 +1,166 @@
+suite: test zookeeper statefulset
+templates:
+  - statefulset.yaml
+tests:
+  - it: should be of type StatefulSet, version apps/v1 and name should end with statefulset
+    asserts:
+      - isKind:
+          of: StatefulSet
+      - isAPIVersion:
+          of: apps/v1
+      - matchRegex:
+          path: metadata.name
+          pattern: -statefulset
+
+  - it: should render labels with name, chart, instance, managed by tiller and componene
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Tiller
+            app.kubernetes.io/name: zookeeper
+            helm.sh/chart: zookeeper-0.1.0
+
+  - it: should render the number of replicas
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: should render zookeeper headless service the statefulset is backed by
+    asserts:
+      - equal:
+          path: spec.serviceName
+          value: RELEASE-NAME-zookeeper-headless
+
+  - it: should render the update strategy used to deploy zookeeper is of type RollingUpdate
+    asserts:
+      - equal:
+          path: spec.updateStrategy
+          value:
+            type: RollingUpdate
+
+  - it: should render selector to match pod of name zookeeper, instace RELEASE-NAME and component zookeeper-server
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/name: zookeeper
+      - equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/name: zookeeper
+
+  - it: should render a termination grace period of 1800
+    asserts:
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 1800
+
+  - it: should render a security context to 1000
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            fsGroup: 1000
+            runAsUser: 1000
+
+  - it: should render container name to zookeeper, image to gcr and pullPolicy to Always
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: zookeeper
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: k8s.gcr.io/kubernetes-zookeeper:1.0-3.4.10
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always
+
+  - it: should render zookeeper port as 2181 and open range as 2888 to 3888
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].ports[0]
+          value:
+            containerPort: 2181
+            name: client
+            protocol: TCP
+      - equal:
+          path: spec.template.spec.containers[0].ports[1]
+          value:
+            containerPort: 2888
+            name: server
+            protocol: TCP
+      - equal:
+          path: spec.template.spec.containers[0].ports[2]
+          value:
+            containerPort: 3888
+            name: leader-election
+            protocol: TCP
+
+  - it: should render the right command to start zooleeper
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].command[2]
+          value: start-zookeeper --servers=1 --data_dir=/var/lib/zookeeper/data --data_log_dir=/var/lib/zookeeper/data/log --conf_dir=/opt/zookeeper/conf --client_port=2181 --election_port=2888 --server_port=3888 --tick_time=2000 --init_limit=10 --sync_limit=5 --heap=512M --max_client_cnxns=60 --snap_retain_count=3 --purge_interval=12 --max_session_timeout=40000 --min_session_timeout=4000 --log_level=INFO
+
+  - it: should render resources
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              cpu: "0.5"
+              memory: 250Mi
+
+  - it: should render liveliness probe and readiness probe
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe
+          value:
+            exec:
+              command:
+                - sh
+                - -c
+                - zookeeper-ready 2181
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe
+          value:
+            exec:
+              command:
+                - sh
+                - -c
+                - zookeeper-ready 2181
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+
+  - it: should render voluemMounts
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0]
+          value:
+            mountPath: /var/lib/zookeeper
+            name: datadir
+
+  - it: should render volumeClaimTemplates
+    asserts:
+      - equal:
+          path: spec.volumeClaimTemplates[0]
+          value:
+            metadata:
+              name: datadir
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 1Gi

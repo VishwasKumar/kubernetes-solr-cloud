@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "zookeeper.fullname" . }}-service
+  labels:
+{{ include "zookeeper.chart.labels" . | indent 4 }}
+  annotations:
+    {{- with .Values.service.annotations }}
+    {{ toYaml . | indent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: client
+      protocol: TCP
+      name: zookeeper-port
+  selector:
+    app.kubernetes.io/name: {{ include "zookeeper.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "zookeeper-server"

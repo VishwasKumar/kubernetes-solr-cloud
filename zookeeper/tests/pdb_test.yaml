@@ -1,0 +1,39 @@
+suite: test zookeeper headless service
+templates:
+  - pdb.yaml
+tests:
+  - it: should be of type PodDisruptionBudget, version policy/v1beta1 and name should end with pdb
+    asserts:
+      - isKind:
+          of: PodDisruptionBudget
+      - isAPIVersion:
+          of: policy/v1beta1
+      - matchRegex:
+          path: metadata.name
+          pattern: -pdb
+
+  - it: should render labels with name, chart, instance, managed by tiller and componene
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Tiller
+            app.kubernetes.io/name: zookeeper
+            helm.sh/chart: zookeeper-0.1.0
+
+  - it: should mactch label selector
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/name: zookeeper
+
+  - it: should render pod disruption budget
+    asserts:
+      - equal:
+          path: spec.maxUnavailable
+          value: 1

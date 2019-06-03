@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "zookeeper.fullname" . }}-headless
+  labels:
+{{ include "zookeeper.chart.labels" . | indent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    {{- range $key, $port := .Values.headlessService.ports }}
+    - name: {{ $key }}
+      port: {{ $port.containerPort }}
+      targetPort: {{ $key }}
+      protocol: {{ $port.protocol }}
+    {{- end }}
+  selector:
+      app: {{ template "zookeeper.name" . }}
+      release: {{ .Release.Name }}

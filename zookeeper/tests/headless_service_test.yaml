@@ -1,0 +1,54 @@
+suite: test zookeeper headless service
+templates:
+  - headless_service.yaml
+tests:
+  - it: should be of type Service, version v1 and name should end with headless
+    asserts:
+      - isKind:
+          of: Service
+      - isAPIVersion:
+          of: v1
+      - matchRegex:
+          path: metadata.name
+          pattern: -headless
+  - it: should render labels with name, chart, instance, managed by tiller and componene
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Tiller
+            app.kubernetes.io/name: zookeeper
+            helm.sh/chart: zookeeper-0.1.0
+
+  - it: should have clusterIP None for headless service
+    asserts:
+      - equal:
+          path: spec.clusterIP
+          value: None
+
+  - it: should render ports for zookeeper to communicate
+    asserts:
+      - equal:
+          path: spec.ports[0]
+          value:
+            name: client
+            port: 2181
+            protocol: TCP
+            targetPort: client
+      - equal:
+          path: spec.ports[1]
+          value:
+            name: election
+            port: 3888
+            protocol: TCP
+            targetPort: election
+      - equal:
+          path: spec.ports[2]
+          value:
+            name: server
+            port: 2888
+            protocol: TCP
+            targetPort: server
+

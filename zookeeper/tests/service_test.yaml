@@ -1,0 +1,51 @@
+suite: test zookeeper service
+templates:
+  - service.yaml
+tests:
+  - it: should be of type Service, version v1 and name should end with service
+    asserts:
+      - isKind:
+          of: Service
+      - isAPIVersion:
+          of: v1
+      - matchRegex:
+          path: metadata.name
+          pattern: -service
+  - it: should render labels with name, chart, instance, managed by tiller and componene
+    asserts:
+      - equal:
+          path: metadata.labels
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/managed-by: Tiller
+            app.kubernetes.io/name: zookeeper
+            helm.sh/chart: zookeeper-0.1.0
+
+  - it: should match service selectors to labels
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/component: zookeeper-server
+            app.kubernetes.io/instance: RELEASE-NAME
+            app.kubernetes.io/name: zookeeper
+
+  - it: should render annotations for service
+    asserts:
+      - isEmpty:
+          path: metadata.annotations
+
+  - it: should render service ports and service type to clusterIP
+    asserts:
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0]
+          value:
+            name: zookeeper-port
+            port: 2181
+            protocol: TCP
+            targetPort: client
+

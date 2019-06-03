@@ -1,0 +1,13 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ template "zookeeper.fullname" . }}-pdb
+  labels:
+{{ include "zookeeper.chart.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "zookeeper.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "zookeeper-server"
+{{ toYaml .Values.podDisruptionBudget | indent 2 }}
